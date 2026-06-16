@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # 1. Laravel API Konteyneri (HTTP İstekleri İçin)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: url_shortener_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    ports:
+      - "8000:9000"
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - url_shortener_network
+
+  # 2. Kuyruk İşçisi Konteyneri (İstatistikleri Arka Planda İşleyecek Amele)
+  queue-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile # Aynı Dockerfile'ı kullanıyor!
+    container_name: url_shortener_queue_worker
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    # İŞTE O AYRIŞAN NOKTA: Bu konteyner sadece kuyruk dinlemek için açılıyor
+    command: php artisan queue:work --queue=default --tries=3
+    depends_on:
+      - mysql
+      - redis
+      - app
+    networks:
+      - url_shortener_network
+
+  # 3. MySQL Veritabanı Konteyneri
+  mysql:
+    image: mysql:8.0
+    container_name: url_shortener_db
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: url_shortener
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: root
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - url_shortener_network
+
+  # 4. Redis Cache Konteyneri
+  redis:
+    image: redis:alpine
+    container_name: url_shortener_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - url_shortener_network
+
+# Kalıcı verilerimiz için disk alanları (Volume) tanımlıyoruz
+volumes:
+  mysql_data:
+  redis_data:
+
+# Konteynerlerin birbirleriyle güvenli konuşması için ortak ağ (Network)
+networks:
+  url_shortener_network:
+    driver: bridge
