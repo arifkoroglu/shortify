@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  # 1. Laravel API Konteyneri (HTTP İstekleri İçin)
+  # 1. Laravel Uygulama Motorumuz
   app:
     build:
       context: .
@@ -12,66 +10,58 @@ services:
     volumes:
       - .:/var/www
     ports:
-      - "8000:9000"
-    depends_on:
-      - mysql
-      - redis
+      - "8000:8000"
     networks:
-      - url_shortener_network
+      - shortify_network
 
-  # 2. Kuyruk İşçisi Konteyneri (İstatistikleri Arka Planda İşleyecek Amele)
+  # 2. Arka Plan İşçimiz (Kuyruk Yönetimi için)
   queue-worker:
     build:
       context: .
-      dockerfile: Dockerfile # Aynı Dockerfile'ı kullanıyor!
-    container_name: url_shortener_queue_worker
+      dockerfile: Dockerfile
+    container_name: url_shortener_queue
     restart: unless-stopped
     working_dir: /var/www
     volumes:
       - .:/var/www
-    # İŞTE O AYRIŞAN NOKTA: Bu konteyner sadece kuyruk dinlemek için açılıyor
-    command: php artisan queue:work --queue=default --tries=3
+    command: php artisan queue:work
     depends_on:
-      - mysql
-      - redis
       - app
+      - redis
     networks:
-      - url_shortener_network
+      - shortify_network
 
-  # 3. MySQL Veritabanı Konteyneri
-  mysql:
+  # 3. MySQL 8.0 Veritabanımız
+  db:
     image: mysql:8.0
     container_name: url_shortener_db
     restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: shortify_db
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: shortify_user
+      MYSQL_PASSWORD: shortify_password
     ports:
       - "3306:3306"
-    environment:
-      MYSQL_DATABASE: url_shortener
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_PASSWORD: root
     volumes:
-      - mysql_data:/var/lib/mysql
+      - dbdata:/var/lib/mysql
     networks:
-      - url_shortener_network
+      - shortify_network
 
-  # 4. Redis Cache Konteyneri
+  # 4. Hızlı Önbellek & Tıklama Sayacı (Redis)
   redis:
     image: redis:alpine
     container_name: url_shortener_redis
     restart: unless-stopped
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
     networks:
-      - url_shortener_network
+      - shortify_network
 
-# Kalıcı verilerimiz için disk alanları (Volume) tanımlıyoruz
-volumes:
-  mysql_data:
-  redis_data:
-
-# Konteynerlerin birbirleriyle güvenli konuşması için ortak ağ (Network)
 networks:
-  url_shortener_network:
+  shortify_network:
     driver: bridge
+
+volumes:
+  dbdata:
+    driver: local
