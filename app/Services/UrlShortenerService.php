@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Entities\Url;
 use App\Repositories\Contracts\UrlRepositoryInterface;
+use App\Services\UrlHashService;
 use Illuminate\Support\Facades\Cache;
 use DateTime;
 use Exception;

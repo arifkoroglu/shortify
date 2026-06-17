@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('short_code')->unique()->index();
             $table->string('title')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->timestamp('expires_at');
+            $table->timestamp('expires_at')->nullable();
             $table->timestamps();
         });
     }
