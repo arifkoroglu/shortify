@@ -27,6 +27,14 @@ class UrlShortenerService
      */
     public function shorten(string $originalUrl, ?int $userId = null, ?DateTime $expiresAt = null): Url
     {
+        
+        $existingUrl = $this->isExistShortenUrl($originalUrl);
+
+        if ($existingUrl !== null) {
+            return $existingUrl;
+        }
+        
+
         $draftUrl = new Url(
             id: null,
             originalUrl: $originalUrl,
@@ -55,6 +63,11 @@ class UrlShortenerService
         $this->putInCache($resultUrl);
 
         return $resultUrl;
+    }
+
+    public function isExistShortenUrl(string $originalUrl): ?Url 
+    {
+        return $this->urlRepository->findByOriginalUrl($originalUrl);    
     }
 
     /**

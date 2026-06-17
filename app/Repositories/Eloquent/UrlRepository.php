@@ -9,6 +9,7 @@ use DateTime;
 
 class UrlRepository implements UrlRepositoryInterface
 {
+
     public function findByShortCode(string $shortCode): ?Url
     {
         $model = UrlModel::where('short_code', $shortCode)->first();
@@ -20,6 +21,19 @@ class UrlRepository implements UrlRepositoryInterface
         // Eloquent Model'i, Domain Entity'sine haritalıyoruz (Mapping)
         return $this->mapToEntity($model);
     }
+
+    public function findByOriginalUrl(string $originalUrl): ?Url
+    {
+        $model = UrlModel::where('original_url', $originalUrl)->first();
+     
+        if (!$model) {
+            return null;
+        }
+
+        // Eloquent Model'i, Domain Entity'sine haritalıyoruz (Mapping)
+        return $this->mapToEntity($model);
+    }
+
 
     public function save(Url $url): Url
     {
